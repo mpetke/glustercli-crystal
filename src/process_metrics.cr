@@ -55,7 +55,7 @@ module GlusterCLI
         # Number of Iterations. Run two iterations to compare with previous
         "-n", "2",
         # Delay time in second(0.2 sec -> 200ms)
-        "-d", "0.2",
+        "-d", "1.0",
         # PIDs
         "-p", pids.join(","),
       ]
