@@ -6,20 +6,23 @@ require "./types"
 module GlusterCLI
   class Peer
     # :nodoc:
-    def initialize(@cli : CLI, @hostname : String)
+    def initialize(@cli)
     end
 
     # :nodoc:
     def self.list(cli)
-      resp = cli.execute_gluster_cmd(["pool", "list", "--xml"])
+      rc, resp, err = cli.execute_gluster_cmd(["pool", "list", "--xml"])
+      if rc != 0
+        raise CommandException.new(rc, err)
+      end
 
       document = XML.parse(resp)
 
-      peers = document.xpath_nodes("//peerStatus/peer")
+      prs = document.xpath_nodes("//peerStatus/peer")
 
-      peers.map do |data|
+      prs.map do |pr|
         peer = NodeInfo.new
-        data.children.each do |ele|
+        pr.children.each do |ele|
           case ele.name
           when "uuid"
             peer.id = ele.content.strip
@@ -41,26 +44,8 @@ module GlusterCLI
       end
     end
 
-    # Get a Peer information
-    #
-    # Example:
-    # ```
-    # cli.peer("server1.example.com").get
-    # ```
-    def get
-      # TODO: Find a better solution than running Pool list
-      # and returning one record
-      peers = Peer.list(@cli)
-      peers.each do |peer|
-        return peer if peer.hostname == @hostname
-      end
-
-      nil
-    end
-
     # :nodoc:
     def self.add(cli, hostname)
-      cli.execute_gluster_cmd(["peer", "probe", hostname, "--xml"])
     end
 
     # Remove a Peer
@@ -70,7 +55,6 @@ module GlusterCLI
     # cli.peer("server1.example.com").remove
     # ```
     def remove
-      @cli.execute_gluster_cmd(["peer", "detach", @hostname, "--xml"])
     end
   end
 end
