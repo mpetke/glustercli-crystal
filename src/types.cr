@@ -14,25 +14,32 @@ module GlusterCLI
   TYPE_DISPERSE  = "Disperse"
 
   class CommandException < Exception
-    def initialize(@ret : Int32, @error : String)
-      super("[#{ret}] #{error}")
+    def initialize(@ret : Int32, @error : String, @errno = 0)
+      super("[#{@ret}] #{@errno} #{@error}")
     end
+  end
+
+  struct CliError
+    property ret = 0, errno = 0, message = ""
+    property? ok = true
   end
 
   struct VolumeCreateOptions
     property replica_count = 1,
       disperse_count = 0,
       disperse_redundancy_count = 0,
-      volume_type = "Distribute",
-      force = false
+      volume_type = "Distribute"
+
+    property? force = false
   end
 
   struct NodeInfo
     include JSON::Serializable
 
     property id = "",
-      hostname = "",
-      connected = false
+      hostname = ""
+
+    property? connected = false
 
     def initialize
     end
@@ -121,7 +128,13 @@ module GlusterCLI
     end
 
     def subvol_size
-      @bricks.size / @distribute_count
+      if @replica_count > 1
+        @replica_count
+      elsif @disperse_count > 0
+        @disperse_count
+      else
+        1
+      end
     end
   end
 end

@@ -59,8 +59,6 @@ module GlusterCLI
             volume.snapshot_count = ele.content.strip.to_i
           when "brickCount"
             volume.brick_count = ele.content.strip.to_i
-          when "distCount"
-            volume.distribute_count = ele.content.strip.to_i
           when "replicaCount"
             volume.replica_count = ele.content.strip.to_i
           when "arbiterCount"
@@ -73,6 +71,7 @@ module GlusterCLI
             nil
           end
         end
+        volume.distribute_count = (volume.brick_count / volume.subvol_size).to_i
 
         brks = vol.xpath_nodes(".//brick")
         brks.each do |brk|
@@ -121,10 +120,7 @@ module GlusterCLI
     def info(status = false) : VolumeInfo
       return _status if status
 
-      rc, resp, err = @cli.execute_gluster_cmd(["volume", "info", @name, "--xml"])
-      if rc != 0
-        raise CommandException.new(rc, err)
-      end
+      resp = @cli.execute_gluster_cmd(["volume", "info", @name, "--xml"])
 
       document = XML.parse(resp)
 
@@ -139,10 +135,7 @@ module GlusterCLI
     def self.list(cli, status = false)
       return all_status(cli) if status
 
-      rc, resp, err = cli.execute_gluster_cmd(["volume", "info", "--xml"])
-      if rc != 0
-        raise CommandException.new(rc, err)
-      end
+      resp = cli.execute_gluster_cmd(["volume", "info", "--xml"])
 
       document = XML.parse(resp)
 
@@ -154,10 +147,7 @@ module GlusterCLI
     # ameba:disable Metrics/CyclomaticComplexity
     def self.brick_status(cli, volname = "all")
       # TODO: Volume filter
-      rc, resp, err = cli.execute_gluster_cmd(["volume", "status", volname, "detail", "--xml"])
-      if rc != 0
-        raise CommandException.new(rc, err)
-      end
+      resp = cli.execute_gluster_cmd(["volume", "status", volname, "detail", "--xml"])
 
       document = XML.parse(resp)
 
